@@ -1,12 +1,13 @@
-import mlflow
 import pickle
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
-from sklearn.feature_extraction import DictVectorizer
 from urllib.parse import urlparse
+
+import mlflow
+import numpy as np
 from mlflow import MlflowClient
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import RandomizedSearchCV, train_test_split
 
 from preprocessing.prepare_data import data_for_modeling
 
@@ -23,21 +24,27 @@ def eval_metrics(actual, pred):
 
 def get_best_model(filename: str, random_grid: dict) -> None:
     X, y, multi, scaler = data_for_modeling(filename)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.25, random_state=1)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=1
+    )
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, y_train, test_size=0.25, random_state=1
+    )
 
     with mlflow.start_run():
         mlflow.sklearn.autolog()
         mlflow.set_tag("model", "RandomForest")
         mlflow.set_tag("developer", "tom")
-        rf = RandomizedSearchCV(estimator=RandomForestRegressor(),
-                                param_distributions=random_grid,
-                                scoring='neg_mean_squared_error',
-                                n_iter=10,
-                                cv=5,
-                                verbose=0,
-                                random_state=42,
-                                n_jobs=2)
+        rf = RandomizedSearchCV(
+            estimator=RandomForestRegressor(),
+            param_distributions=random_grid,
+            scoring="neg_mean_squared_error",
+            n_iter=10,
+            cv=5,
+            verbose=0,
+            random_state=42,
+            n_jobs=2,
+        )
         rf.fit(X_train, y_train)
         y_pred = rf.predict(X_test)
         rmse = mean_squared_error(y_test, y_pred, squared=False)
@@ -62,8 +69,8 @@ def get_best_model(filename: str, random_grid: dict) -> None:
     # let's choose the latest model and save it for app
     client = MlflowClient()
     rm = client.list_registered_models()[-1]
-    registered_model = dict(dict(rm).get('latest_versions')[0])
-    registered_model.get('version')
+    registered_model = dict(dict(rm).get("latest_versions")[0])
+    registered_model.get("version")
 
     model = mlflow.pyfunc.load_model(
         model_uri=f"models:/{registered_model.get('name')}/{registered_model.get('version')}"
@@ -71,5 +78,5 @@ def get_best_model(filename: str, random_grid: dict) -> None:
 
     dv = DictVectorizer()
 
-    with open('../prediction_service/model.bin', 'wb') as f_out:
+    with open("../prediction_service/model.bin", "wb") as f_out:
         pickle.dump((dv, scaler, model), f_out)

@@ -12,40 +12,36 @@ Metrics calculation results are available with `GET /metrics` HTTP method in Pro
 import dataclasses
 import datetime
 import logging
-from typing import Dict
-from typing import List 
-from typing import Optional
+from typing import Dict, List, Optional
 
 import flask
 import pandas as pd
 import prometheus_client
-from pyarrow import parquet as pq
-from flask import Flask
 import yaml
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-
+from evidently.model_monitoring import (CatTargetDriftMonitor,
+                                        ClassificationPerformanceMonitor,
+                                        DataDriftMonitor, DataQualityMonitor,
+                                        ModelMonitoring, NumTargetDriftMonitor,
+                                        ProbClassificationPerformanceMonitor,
+                                        RegressionPerformanceMonitor)
 from evidently.pipeline.column_mapping import ColumnMapping
-from evidently.model_monitoring import ModelMonitoring
-from evidently.model_monitoring import CatTargetDriftMonitor
-from evidently.model_monitoring import ClassificationPerformanceMonitor
-from evidently.model_monitoring import DataDriftMonitor
-from evidently.model_monitoring import DataQualityMonitor
-from evidently.model_monitoring import NumTargetDriftMonitor
-from evidently.model_monitoring import ProbClassificationPerformanceMonitor
-from evidently.model_monitoring import RegressionPerformanceMonitor
-
-from evidently.runner.loader import DataLoader
-from evidently.runner.loader import DataOptions
-
+from evidently.runner.loader import DataLoader, DataOptions
+from flask import Flask
+from pyarrow import parquet as pq
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 app = Flask(__name__)
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 
 # Add prometheus wsgi middleware to route /metrics requests
-app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {"/metrics": prometheus_client.make_wsgi_app()})
+app.wsgi_app = DispatcherMiddleware(
+    app.wsgi_app, {"/metrics": prometheus_client.make_wsgi_app()}
+)
 
 
 @dataclasses.dataclass
@@ -91,11 +87,7 @@ class MonitoringService:
     calculation_period_sec: float = 15
     window_size: int
 
-    def __init__(
-        self,
-        datasets: Dict[str, LoadedDataset],
-        window_size: int
-    ):
+    def __init__(self, datasets: Dict[str, LoadedDataset], window_size: int):
         self.reference = {}
         self.monitoring = {}
         self.current = {}
@@ -105,7 +97,10 @@ class MonitoringService:
         for dataset_info in datasets.values():
             self.reference[dataset_info.name] = dataset_info.references
             self.monitoring[dataset_info.name] = ModelMonitoring(
-                monitors=[EVIDENTLY_MONITORS_MAPPING[k]() for k in dataset_info.monitors], options=[]
+                monitors=[
+                    EVIDENTLY_MONITORS_MAPPING[k]() for k in dataset_info.monitors
+                ],
+                options=[],
             )
             self.column_mapping[dataset_info.name] = dataset_info.column_mapping
 
@@ -114,11 +109,13 @@ class MonitoringService:
 
     def iterate(self, dataset_name: str, new_rows: pd.DataFrame):
         """Add data to current dataset for specified dataset"""
-        print('czy to TUTAJ?!?!?!?!?!?!?!?!?')
+        print("czy to TUTAJ?!?!?!?!?!?!?!?!?")
         window_size = self.window_size
 
         if dataset_name in self.current:
-            current_data = self.current[dataset_name].append(new_rows, ignore_index=True)
+            current_data = self.current[dataset_name].append(
+                new_rows, ignore_index=True
+            )
 
         else:
             current_data = new_rows
@@ -127,13 +124,18 @@ class MonitoringService:
 
         if current_size > self.window_size:
             # cut current_size by window size value
-            current_data.drop(index=list(range(0, current_size - self.window_size)), inplace=True)
+            current_data.drop(
+                index=list(range(0, current_size - self.window_size)), inplace=True
+            )
             current_data.reset_index(drop=True, inplace=True)
 
         self.current[dataset_name] = current_data
 
         if current_size < window_size:
-            logging.info(f"Not enough data for measurement: {current_size} of {window_size}." f" Waiting more data")
+            logging.info(
+                f"Not enough data for measurement: {current_size} of {window_size}."
+                f" Waiting more data"
+            )
             return
 
         next_run_time = self.next_run_time.get(dataset_name)
@@ -146,7 +148,9 @@ class MonitoringService:
             seconds=self.calculation_period_sec
         )
         self.monitoring[dataset_name].execute(
-            self.reference[dataset_name], current_data, self.column_mapping[dataset_name]
+            self.reference[dataset_name],
+            current_data,
+            self.column_mapping[dataset_name],
         )
 
         for metric, value, labels in self.monitoring[dataset_name].metrics():
@@ -162,7 +166,9 @@ class MonitoringService:
                 continue
 
             if found is None:
-                found = prometheus_client.Gauge(metric_key, "", list(sorted(labels.keys())))
+                found = prometheus_client.Gauge(
+                    metric_key, "", list(sorted(labels.keys()))
+                )
                 self.metrics[metric_key] = found
 
             try:
@@ -194,31 +200,53 @@ def configure_service():
     # options = MonitoringServiceOptions(**config["service"])
 
     datasets = {
-        'taxi': {
-            'column_mapping': {
-                'categorical_features': ['Airline', 'Source', 'Destination', 'Total_Stops'], 
-                'numerical_features': ['Price']
-            }, 
-            'data_format': {
-                'header': True, 
-                'separator': ','}, 
-            'monitors': ['data_drift', 'num_target_drift', 'regression_performance', 'cat_target_drift'], 
-            'reference_file': './datasets/flights_2.parquet'
-            }
+        "taxi": {
+            "column_mapping": {
+                "categorical_features": [
+                    "Airline",
+                    "Source",
+                    "Destination",
+                    "Total_Stops",
+                ],
+                "numerical_features": ["Price"],
+            },
+            "data_format": {"header": True, "separator": ","},
+            "monitors": [
+                "data_drift",
+                "num_target_drift",
+                "regression_performance",
+                "cat_target_drift",
+            ],
+            "reference_file": "./datasets/flights_2.parquet",
         }
+    }
 
-    options = MonitoringServiceOptions(calculation_period_sec=2, min_reference_size=30, moving_reference=False, datasets_path=datasets, use_reference=True, window_size=5)
+    options = MonitoringServiceOptions(
+        calculation_period_sec=2,
+        min_reference_size=30,
+        moving_reference=False,
+        datasets_path=datasets,
+        use_reference=True,
+        window_size=5,
+    )
 
     for dataset_name, dataset_options in datasets.items():
-        reference_file = dataset_options['reference_file']
-        logging.info(f"Load reference data for dataset {dataset_name} from {reference_file}")
+        reference_file = dataset_options["reference_file"]
+        logging.info(
+            f"Load reference data for dataset {dataset_name} from {reference_file}"
+        )
         reference_data = pq.read_table(reference_file).to_pandas()
         datasets[dataset_name] = LoadedDataset(
             name=dataset_name,
             references=reference_data,
-            monitors=dataset_options['monitors'],
-            column_mapping=ColumnMapping(**dataset_options["column_mapping"]))
-        logging.info("Reference is loaded for dataset %s: %s rows", dataset_name, len(reference_data))
+            monitors=dataset_options["monitors"],
+            column_mapping=ColumnMapping(**dataset_options["column_mapping"]),
+        )
+        logging.info(
+            "Reference is loaded for dataset %s: %s rows",
+            dataset_name,
+            len(reference_data),
+        )
 
         SERVICE = MonitoringService(datasets=datasets, window_size=options.window_size)
 
