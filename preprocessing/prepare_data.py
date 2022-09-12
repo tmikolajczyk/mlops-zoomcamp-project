@@ -10,6 +10,11 @@ from preprocessing.multi_column_labeler import MultiColumnLabelEncoder
 def data_for_modeling(
     filename: str,
 ) -> Tuple[pd.DataFrame, np.ndarray, MultiColumnLabelEncoder, StandardScaler]:
+    """
+    Function prepares datasets preprocessing helpers (encore and scaler)
+    :param filename: string with a path to filename
+    :return: tuple of two numpy arrays and sklearn scaler and custom encoder.
+    """
     df = pd.read_parquet(filename)
     df.dropna(inplace=True)
 

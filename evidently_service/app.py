@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
 """
-This is a demo service for Evidently metrics integration with Prometheus and Grafana.
+This is a demo service for Evidently metrics integration with
+Prometheus and Grafana.
 
 Read `README.md` for proper setup and installation.
 
-The service gets a reference dataset from reference.csv file and process current data with HTTP API.
+The service gets a reference dataset from reference.csv file and
+process current data with HTTP API.
 
-Metrics calculation results are available with `GET /metrics` HTTP method in Prometheus compatible format.
+Metrics calculation results are available with `GET /metrics` HTTP
+method in Prometheus compatible format.
 """
 import dataclasses
 import datetime
@@ -18,12 +21,16 @@ import flask
 import pandas as pd
 import prometheus_client
 import yaml
-from evidently.model_monitoring import (CatTargetDriftMonitor,
-                                        ClassificationPerformanceMonitor,
-                                        DataDriftMonitor, DataQualityMonitor,
-                                        ModelMonitoring, NumTargetDriftMonitor,
-                                        ProbClassificationPerformanceMonitor,
-                                        RegressionPerformanceMonitor)
+from evidently.model_monitoring import (
+    CatTargetDriftMonitor,
+    ClassificationPerformanceMonitor,
+    DataDriftMonitor,
+    DataQualityMonitor,
+    ModelMonitoring,
+    NumTargetDriftMonitor,
+    ProbClassificationPerformanceMonitor,
+    RegressionPerformanceMonitor,
+)
 from evidently.pipeline.column_mapping import ColumnMapping
 from evidently.runner.loader import DataLoader, DataOptions
 from flask import Flask

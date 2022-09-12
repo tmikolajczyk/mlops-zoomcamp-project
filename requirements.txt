@@ -1,4 +1,4 @@
-scikit-learn
+scikit-learn~=1.0.2
 dataclasses==0.6
 Flask~=2.0.1
 pandas>=1.1.5
@@ -7,8 +7,10 @@ requests~=2.26.0
 prometheus_client~=0.11.0
 pyyaml~=5.4.1
 tqdm
-pyarrow
+pyarrow~=9.0.0
 prefect>=2.0b
-pymongo
-evidently
+pymongo~=4.2.0
+evidently~=0.1.57.dev0
 mlflow
+pylint
+numpy~=1.23.3

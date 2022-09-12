@@ -1,4 +1,5 @@
 import pickle
+from Typing import Tuple
 from urllib.parse import urlparse
 
 import mlflow
@@ -15,7 +16,13 @@ mlflow.set_tracking_uri("sqlite:///mlflow.db")
 experiment = mlflow.set_experiment("flight-price-prediction")
 
 
-def eval_metrics(actual, pred):
+def eval_metrics(actual: np.array, pred: np.array) -> Tuple[float, float, float]:
+    """
+    Helper function for the main one for metrics
+    :param actual: numpy array with actual values
+    :param pred: numpy array with predicted values
+    :return: RMSE, MAE and R2 scores (floats).
+    """
     rmse = np.sqrt(mean_squared_error(actual, pred))
     mae = mean_absolute_error(actual, pred)
     r2 = r2_score(actual, pred)
@@ -23,6 +30,13 @@ def eval_metrics(actual, pred):
 
 
 def get_best_model(filename: str, random_grid: dict) -> None:
+    """
+    Function sekks for the best model with provided grid search parameters.
+    :param filename: string with raw data file path
+    :param random_grid: dictionary of parameters for cross validated search
+    of best model parameters
+    :return: None; model is saved to pickled file
+    """
     X, y, multi, scaler = data_for_modeling(filename)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=1
