@@ -21,8 +21,7 @@ The original dataset was provided in XLSX format; for demonstration purposes her
 
 with `venv`:
 
-```
-shell
+```shell script
 python3 -m venv venv
 source venv/bin/activate
 ```
@@ -30,8 +29,7 @@ source venv/bin/activate
 
 with `pipenv`:
 
-```
-shell
+```shell script
 pip install pipenv
 pipenv install
 pipenv shell
@@ -39,14 +37,13 @@ pipenv shell
 
 4. With acitve virtual env run `core.py`. There are values for grid search of best parameters provided in the file, but feel free to make changes to the dictionary.
 
-```shell
+```shell script
 python core.py
 ```
 
 The function will search for the best model and will save it as a `model.bin` file in a ``prediction_service` folder. It will be done automatically but you can check result of modelling process by starting mlflow UI, e.g.:
 
-```
-shell
+```shell script
 mlflow-env % mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
