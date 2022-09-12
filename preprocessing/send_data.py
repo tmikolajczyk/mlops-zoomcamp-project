@@ -5,7 +5,7 @@ from time import sleep
 import pyarrow.parquet as pq
 import requests
 
-table = pq.read_table("flights_2.parquet")
+table = pq.read_table("../res/flights_2.parquet")
 data = table.to_pylist()
 
 

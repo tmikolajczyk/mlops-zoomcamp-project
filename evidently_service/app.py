@@ -217,7 +217,7 @@ def configure_service():
                 "regression_performance",
                 "cat_target_drift",
             ],
-            "reference_file": "./datasets/flights_2.parquet",
+            "reference_file": "./datasets/flights_1.parquet",
         }
     }
 
